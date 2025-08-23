@@ -1,21 +1,29 @@
 {
-  "id": "vaesen-action-damage-helper",
-  "title": "Vaesen – Action & Damage Helper",
-  "description": "Tracks Long/Short actions per turn and adds a damage-application dialog (with extra successes) for Vaesen without modifying the game system.",
-  "version": "0.1.0",
-  "compatibility": {
-    "minimum": "13",
-    "verified": "13"
-  },
-  "authors": [
-    { "name": "Tommaso Paitowsky" }
-  ],
-  "esmodules": ["scripts/module.js"],
-  "styles": ["styles/styles.css"],
-  "readme": "README.md",
-  "changelog": "CHANGELOG.md",
-  "url": "https://github.com/tommasopaitowsky/vaesen-action-damage-helper",
-  "manifest": "https://raw.githubusercontent.com/tommasopaitowsky/vaesen-action-damage-helper/main/module.json",
-  "download": "https://github.com/tommasopaitowsky/vaesen-action-damage-helper/releases/download/v0.1.0/vaesen-action-damage-helper-0.1.0.zip",
-  "flags": { "project": "Moduli per Foundry" }
+    "id": "vaesen-action-damage-helper",
+    "title": "Vaesen – Action & Damage Helper",
+    "description": "Tracks Long/Short actions per turn and adds a damage-application dialog (with extra successes) for Vaesen without modifying the game system.",
+    "version": "0.1.0",
+    "compatibility": {
+        "minimum": "11",
+        "verified": "13"
+    },
+    "authors": [
+        {
+            "name": "Tommaso Paitowsky"
+        }
+    ],
+    "esmodules": [
+        "scripts/module.js"
+    ],
+    "styles": [
+        "styles/styles.css"
+    ],
+    "readme": "README.md",
+    "changelog": "CHANGELOG.md",
+    "url": "https://github.com/tommasopaitowsky/vaesen-action-damage-helper",
+    "manifest": "https://raw.githubusercontent.com/tommasopaitowsky/vaesen-action-damage-helper/main/module.json",
+    "download": "https://github.com/tommasopaitowsky/vaesen-action-damage-helper/releases/download/v0.1.0/vaesen-action-damage-helper-0.1.0.zip",
+    "flags": {
+        "project": "Moduli per Foundry"
+    }
 }
