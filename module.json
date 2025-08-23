@@ -22,7 +22,7 @@
     "changelog": "CHANGELOG.md",
     "url": "https://github.com/tommasopaitowsky/vaesen-action-damage-helper",
     "manifest": "https://raw.githubusercontent.com/tommasopaitowsky/vaesen-action-damage-helper/main/module.json",
-    "download": "https://github.com/tommasopaitowsky/vaesen-action-damage-helper/releases/download/vaesen-action-damage-helper-0.1.0.zip",
+    "download": "https://raw.githubusercontent.com/tommasopaitowsky/vaesen-action-damage-helper/main/releases/download/vaesen-action-damage-helper-0.1.0.zip",
     "flags": {
         "project": "Moduli per Foundry"
     }
