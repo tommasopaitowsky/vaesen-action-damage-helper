@@ -1,0 +1,16 @@
+.vaesen-action-damage-helper-actions-bar,
+.vaesen-actions-bar {
+  display: flex;
+  gap: 0.25rem;
+  margin-top: 0.25rem;
+}
+.vaesen-actions-bar button {
+  line-height: 1.2;
+  padding: 2px 6px;
+  font-size: 11px;
+}
+button.vaesen-action[disabled] { opacity: 0.6; cursor: not-allowed; }
+button.vaesen-long, button.vaesen-short { cursor: pointer; }
+button.vaesen-action-dmg, button.vaesen-apply-dmg {
+  margin-top: 0.25rem;
+}
