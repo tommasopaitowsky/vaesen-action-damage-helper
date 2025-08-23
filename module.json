@@ -8,22 +8,14 @@
     "verified": "13"
   },
   "authors": [
-    {
-      "name": "Tommaso Paitowsky"
-    },
+    { "name": "Tommaso Paitowsky" }
   ],
-  "esmodules": [
-    "scripts/module.js"
-  ],
-  "styles": [
-    "styles/styles.css"
-  ],
+  "esmodules": ["scripts/module.js"],
+  "styles": ["styles/styles.css"],
   "readme": "README.md",
   "changelog": "CHANGELOG.md",
-  "url": "https://github.com/USERNAME/vaesen-action-damage-helper",
+  "url": "https://github.com/tommasopaitowsky/vaesen-action-damage-helper",
   "manifest": "https://raw.githubusercontent.com/tommasopaitowsky/vaesen-action-damage-helper/main/module.json",
   "download": "https://github.com/tommasopaitowsky/vaesen-action-damage-helper/releases/download/v0.1.0/vaesen-action-damage-helper-0.1.0.zip",
-  "flags": {
-    "project": "Moduli per Foundry"
-  }
+  "flags": { "project": "Moduli per Foundry" }
 }
