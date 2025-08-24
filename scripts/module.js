@@ -88,68 +88,77 @@ function registerSettings() {
   });
 }
 
-/* ============ Pulsante “Applica Danno” sotto a Push (colonna allineata) ============ */
-Hooks.on("renderChatMessage", (msg, html) => {
-  if (html.find(`button.${MODID}-apply-dmg`).length) return;
+/* ============ Apply Damage sotto a Push — resiliente a "Push" ============ */
+function buildApplyButtonLike(btnToMimic, msg) {
+  const cls = btnToMimic ? btnToMimic.className : "";
+  const $btn = $(`<button type="button" class="${cls} ${MODID}-apply-dmg">${t("VAESEN_ADH.UI.ApplyDamage")}</button>`);
+  // Colonna, allineato sotto
+  $btn.css({ display: "block", marginTop: "0.25rem" });
+  $btn.on("click", () => openDamageDialog(msg));
+  return $btn;
+}
 
+function ensureApplyButton($root, msg) {
+  // se già presente, fine
+  if ($root.find(`button.${MODID}-apply-dmg`).length) return;
+
+  // cerca il pulsante Push
   const pushBtn =
-    html.find('button[data-action="push"]').last()[0] ||
-    html.find('button[aria-label*="Push" i]').last()[0] ||
-    html.find('button:contains("Push")').last()[0] ||
+    $root.find('button[data-action="push"]').last()[0] ||
+    $root.find('button[aria-label*="Push" i]').last()[0] ||
+    $root.find('button:contains("Push")').last()[0] ||
     null;
 
-  function buildApplyButtonLike(btnToMimic) {
-    const cls = btnToMimic ? btnToMimic.className : "";
-    const $btn = $(`<button type="button" class="${cls} ${MODID}-apply-dmg">Applica Danno</button>`);
-    // Colonna allineata sotto Push
-    $btn.css({ display: "block", marginTop: "0.25rem" });
-    $btn.on("click", () => openDamageDialog(msg));
-    return $btn;
-  }
-
   if (pushBtn) {
-    const $apply = buildApplyButtonLike(pushBtn);
-    $(pushBtn).after($apply); // subito sotto Push
+    const $apply = buildApplyButtonLike(pushBtn, msg);
+    $(pushBtn).after($apply);
     return;
   }
 
-  // Fallback se non esiste Push in questa carta
-  const host = html.find(".message-content .card-buttons").last().length ? html.find(".message-content .card-buttons").last() : html;
+  // fallback: card-buttons o message-content
+  const host =
+    $root.find(".message-content .card-buttons").last().length
+      ? $root.find(".message-content .card-buttons").last()
+      : $root.find(".message-content").last().length
+        ? $root.find(".message-content").last()
+        : $root;
+
   const anyBtn = host.find("button").first()[0];
-  const $apply = buildApplyButtonLike(anyBtn);
+  const $apply = buildApplyButtonLike(anyBtn, msg);
   host.append($apply);
+}
+
+function observeMessageForChanges($root, msg) {
+  const node = $root[0];
+  if (!node || node.__adhObserver) return;
+  const obs = new MutationObserver(() => {
+    try { ensureApplyButton($root, msg); } catch (e) { console.error(`${MODID}] ensureApplyButton (observer)`, e); }
+  });
+  obs.observe(node, { childList: true, subtree: true });
+  node.__adhObserver = obs;
+}
+
+Hooks.on("renderChatMessage", (msg, html) => {
+  try {
+    ensureApplyButton(html, msg);
+    observeMessageForChanges(html, msg);
+  } catch (e) {
+    console.error(`${MODID}] renderChatMessage`, e);
+  }
 });
 
-/* ============ Damage Dialog ============ */
-async function openDamageDialog(_chatMessage) {
-  const defender = canvas?.tokens?.controlled?.[0]?.actor ?? null;
-  const dlgData = { baseDamage: 1, extraToDamage: 0, isMental: false };
-
-  const html = await renderTemplate(`modules/${MODID}/templates/damage-dialog.hbs`, dlgData);
-
-  new Dialog({
-    title: "Applica Danno (Vaesen)",
-    content: html,
-    buttons: {
-      apply: {
-        label: "Applica",
-        callback: async (dlgHtml) => {
-          const base = Number(dlgHtml.find('input[name="baseDamage"]').val() || 0);
-          const extra = Number(dlgHtml.find('input[name="extraToDamage"]').val() || 0);
-          const isMental = dlgHtml.find('input[name="isMental"]').is(":checked");
-
-          const tokens = canvas?.tokens?.controlled?.length ? canvas.tokens.controlled : (defender ? [defender.token] : []);
-          if (!tokens?.length) return uiWarn("Seleziona almeno un bersaglio.");
-
-          for (const tkn of tokens) await applyDamageToActor(tkn.actor, base + extra, { isMental });
-          uiInfo("Danno applicato.");
-        }
-      },
-      cancel: { label: "Annulla" }
-    },
-    default: "apply"
-  }).render(true);
-}
+Hooks.on("updateChatMessage", (msg/*, changes, options, userId*/) => {
+  try {
+    // recupera l'elemento del messaggio già presente nel log
+    const $li = ui.chat?.element?.find(`li.chat-message[data-message-id="${msg.id}"]`);
+    if ($li?.length) {
+      ensureApplyButton($li, msg);
+      observeMessageForChanges($li, msg);
+    }
+  } catch (e) {
+    console.error(`${MODID}] updateChatMessage`, e);
+  }
+});
 
 /* ============ Applica Danno: PG vs NPC ============ */
 async function applyDamageToActor(actor, amount, { isMental = false } = {}) {
