@@ -1,105 +1,116 @@
-// Vaesen – Action & Damage Helper (v0.2.6)
-// PC: tick condition boxes + set isBroken
+// Vaesen – Action & Damage Helper (v0.2.8)
+// PC: tick condition boxes + set isBroken (conteggio corretto delle box tickabili)
 // NPC/Vaesen: (1) activate condition Items (system.active) → (2) numeric fallback → (3) flags
-// Chat: "Apply Damage" under Push; resilient to rerenders (Push, theme DOM changes)
+//             + setting per fermarsi quando le condizioni sono esaurite (warning)
+// Chat: "Apply Damage" sotto alla card; resiliente ai re-render; i18n con fallback
 
 const MODID = "vaesen-action-damage-helper";
+const DEBUG_ADH = false;
 
 /* ============ Utils ============ */
 function get(obj, path, fallback = undefined) {
   try { return path.split(".").reduce((o, k) => (o && k in o) ? o[k] : undefined, obj) ?? fallback; }
   catch { return fallback; }
 }
-function t(key, data = {}) { try { return game.i18n.format(key, data); } catch { return key; } }
+function dbg(...a) { if (DEBUG_ADH) console.debug(`[${MODID}]`, ...a); }
+function uiWarn(msg) { ui.notifications?.warn(`[${MODID}] ${msg}`); }
+function uiInfo(msg) { ui.notifications?.info(`[${MODID}] ${msg}`); }
 /** i18n con fallback: evita chiavi grezze a schermo */
 function safeLabel(key, fallbackIt, fallbackEn) {
-  const loc = (game.i18n?.localize?.(key) ?? "").trim();
-  if (loc && loc !== key) return loc;
+  try {
+    const loc = (game.i18n?.localize?.(key) ?? "").trim();
+    if (loc && loc !== key) return loc;
+  } catch {}
   const lang = (game.i18n?.lang ?? "en").toLowerCase();
   return lang.startsWith("it") ? fallbackIt : fallbackEn;
 }
-function uiWarn(msg) { ui.notifications?.warn(`[${MODID}] ${msg}`); }
-function uiInfo(msg) { ui.notifications?.info(`[${MODID}] ${msg}`); }
-function dbg(...a) { console.debug(`[${MODID}]`, ...a); }
+const L = (key, en, it) => safeLabel(key, it, en);
 
 /* ============ Settings ============ */
 function registerSettings() {
   game.settings.register(MODID, "damageMode", {
-    name: t("VAESEN_ADH.Settings.DamageMode.Name"),
-    hint: t("VAESEN_ADH.Settings.DamageMode.Hint"),
+    name: L("VAESEN_ADH.Settings.DamageMode.Name", "Damage Mode (PC)", "Modalità Danno (PG)"),
+    hint: L("VAESEN_ADH.Settings.DamageMode.Hint", "For PCs: 'conditions' ticks boxes; 'numeric' uses flags counter.", "Per i PG: 'condizioni' spunta caselle; 'numerico' usa i flags come contatore."),
     scope: "world", config: true, type: String,
     choices: {
-      "conditions": t("VAESEN_ADH.Settings.DamageMode.Choices.Conditions"),
-      "numeric": t("VAESEN_ADH.Settings.DamageMode.Choices.Numeric")
+      "conditions": L("VAESEN_ADH.Settings.DamageMode.Choices.Conditions", "Conditions (states + broken)", "Condizioni (states + broken)"),
+      "numeric":    L("VAESEN_ADH.Settings.DamageMode.Choices.Numeric",    "Numeric (flags)",             "Numerico (flags)")
     },
     default: "conditions"
   });
 
   // PC paths
   game.settings.register(MODID, "targetPathPhysical", {
-    name: t("VAESEN_ADH.Settings.TargetPathPhysical.Name"),
-    hint: t("VAESEN_ADH.Settings.TargetPathPhysical.Hint"),
-    scope: "world", config: true, type: String,
-    default: "system.condition.physical.states"
+    name: L("VAESEN_ADH.Settings.TargetPathPhysical.Name", "PC – Physical conditions path (states)", "PG – Path condizioni FISICHE (states)"),
+    hint: L("VAESEN_ADH.Settings.TargetPathPhysical.Hint", "e.g., system.condition.physical.states", "Es.: system.condition.physical.states"),
+    scope: "world", config: true, type: String, default: "system.condition.physical.states"
   });
   game.settings.register(MODID, "targetPathMental", {
-    name: t("VAESEN_ADH.Settings.TargetPathMental.Name"),
-    hint: t("VAESEN_ADH.Settings.TargetPathMental.Hint"),
-    scope: "world", config: true, type: String,
-    default: "system.condition.mental.states"
+    name: L("VAESEN_ADH.Settings.TargetPathMental.Name", "PC – Mental conditions path (states)", "PG – Path condizioni MENTALI (states)"),
+    hint: L("VAESEN_ADH.Settings.TargetPathMental.Hint", "e.g., system.condition.mental.states", "Es.: system.condition.mental.states"),
+    scope: "world", config: true, type: String, default: "system.condition.mental.states"
   });
   game.settings.register(MODID, "brokenPathPhysical", {
-    name: t("VAESEN_ADH.Settings.BrokenPathPhysical.Name"),
-    hint: t("VAESEN_ADH.Settings.BrokenPathPhysical.Hint"),
-    scope: "world", config: true, type: String,
-    default: "system.condition.physical.isBroken"
+    name: L("VAESEN_ADH.Settings.BrokenPathPhysical.Name", "PC – Physical isBroken path", "PG – Path FISICO isBroken"),
+    hint: L("VAESEN_ADH.Settings.BrokenPathPhysical.Hint", "e.g., system.condition.physical.isBroken", "Es.: system.condition.physical.isBroken"),
+    scope: "world", config: true, type: String, default: "system.condition.physical.isBroken"
   });
   game.settings.register(MODID, "brokenPathMental", {
-    name: t("VAESEN_ADH.Settings.BrokenPathMental.Name"),
-    hint: t("VAESEN_ADH.Settings.BrokenPathMental.Hint"),
-    scope: "world", config: true, type: String,
-    default: "system.condition.mental.isBroken"
+    name: L("VAESEN_ADH.Settings.BrokenPathMental.Name", "PC – Mental isBroken path", "PG – Path MENTALE isBroken"),
+    hint: L("VAESEN_ADH.Settings.BrokenPathMental.Hint", "e.g., system.condition.mental.isBroken", "Es.: system.condition.mental.isBroken"),
+    scope: "world", config: true, type: String, default: "system.condition.mental.isBroken"
   });
 
   game.settings.register(MODID, "conditionsPreferBoolean", {
-    name: t("VAESEN_ADH.Settings.ConditionsPreferBoolean.Name"),
-    hint: t("VAESEN_ADH.Settings.ConditionsPreferBoolean.Hint"),
+    name: L("VAESEN_ADH.Settings.ConditionsPreferBoolean.Name", "PC – Tick boolean boxes (states)", "PG – Spunta caselle booleane (states)"),
+    hint: L("VAESEN_ADH.Settings.ConditionsPreferBoolean.Hint", "If enabled, PCs use boolean condition boxes.", "Se attivo, i PG usano caselle booleane."),
     scope: "world", config: true, type: Boolean, default: true
   });
   game.settings.register(MODID, "conditionObjectBoolKey", {
-    name: t("VAESEN_ADH.Settings.ConditionObjectBoolKey.Name"),
-    hint: t("VAESEN_ADH.Settings.ConditionObjectBoolKey.Hint"),
+    name: L("VAESEN_ADH.Settings.ConditionObjectBoolKey.Name", "PC – Boolean key inside states", "PG – Chiave booleana dentro le states"),
+    hint: L("VAESEN_ADH.Settings.ConditionObjectBoolKey.Hint", "Primary key for object states (default: isChecked).", "Chiave primaria per gli oggetti in states (default: isChecked)."),
     scope: "world", config: true, type: String, default: "isChecked"
   });
 
   // NPC/Vaesen: Items + numeric fallback
   game.settings.register(MODID, "npcUseConditionItems", {
-    name: t("VAESEN_ADH.Settings.NpcUseConditionItems.Name"),
-    hint: t("VAESEN_ADH.Settings.NpcUseConditionItems.Hint"),
+    name: L("VAESEN_ADH.Settings.NpcUseConditionItems.Name", "NPC/Vaesen – Use condition Items", "Vaesen/NPC – Usa Item condizione"),
+    hint: L("VAESEN_ADH.Settings.NpcUseConditionItems.Hint", "Before numeric tracks, activate condition Items (system.active).", "Prima dei tracciati numerici, attiva le condizioni come Item (system.active)."),
     scope: "world", config: true, type: Boolean, default: true
   });
   game.settings.register(MODID, "npcConditionActivePath", {
-    name: t("VAESEN_ADH.Settings.NpcConditionActivePath.Name"),
-    hint: t("VAESEN_ADH.Settings.NpcConditionActivePath.Hint"),
+    name: L("VAESEN_ADH.Settings.NpcConditionActivePath.Name", "NPC – Item active path", "NPC – Path attivazione sull'Item"),
+    hint: L("VAESEN_ADH.Settings.NpcConditionActivePath.Hint", "Boolean path on Item (default: system.active).", "Percorso booleano sull'Item (default: system.active)."),
     scope: "world", config: true, type: String, default: "system.active"
   });
   game.settings.register(MODID, "npcNumericPhysicalCandidates", {
-    name: t("VAESEN_ADH.Settings.NpcNumericPhysicalCandidates.Name"),
-    hint: t("VAESEN_ADH.Settings.NpcNumericPhysicalCandidates.Hint"),
+    name: L("VAESEN_ADH.Settings.NpcNumericPhysicalCandidates.Name", "NPC/Vaesen – Physical numeric candidates (CSV)", "Vaesen/NPC – Candidati numerici FISICO (CSV)"),
+    hint: L("VAESEN_ADH.Settings.NpcNumericPhysicalCandidates.Hint", "Examples: system.health.value, system.toughness.value", "Esempi: system.health.value, system.toughness.value"),
     scope: "world", config: true, type: String,
     default: "system.health.value,system.toughness.value,system.attributes.health.value"
   });
   game.settings.register(MODID, "npcNumericMentalCandidates", {
-    name: t("VAESEN_ADH.Settings.NpcNumericMentalCandidates.Name"),
-    hint: t("VAESEN_ADH.Settings.NpcNumericMentalCandidates.Hint"),
+    name: L("VAESEN_ADH.Settings.NpcNumericMentalCandidates.Name", "NPC/Vaesen – Mental numeric candidates (CSV)", "Vaesen/NPC – Candidati numerici MENTALE (CSV)"),
+    hint: L("VAESEN_ADH.Settings.NpcNumericMentalCandidates.Hint", "Add a path if your sheet has a mental track.", "Aggiungi un path se il tuo sheet ha un track mentale."),
     scope: "world", config: true, type: String,
     default: "system.mental.value,system.attributes.mental.value"
   });
 
+  // Nuova: stop su esaurimento condizioni NPC
+  game.settings.register(MODID, "npcStopWhenNoConditions", {
+    name: L("VAESEN_ADH.Settings.NpcStopWhenNoConditions.Name",
+            "NPC/Vaesen – Stop when no conditions left",
+            "Vaesen/NPC – Fermati se non restano condizioni"),
+    hint: L("VAESEN_ADH.Settings.NpcStopWhenNoConditions.Hint",
+            "If enabled, when all condition Items are active the module warns and stops (no numeric fallback).",
+            "Se attivo, quando tutte le condizioni (Item) sono attive il modulo avvisa e si ferma (niente fallback numerico)."),
+    scope: "world", config: true, type: Boolean, default: true
+  });
+
   // Chat
   game.settings.register(MODID, "chatButtonSelector", {
-    name: t("VAESEN_ADH.Settings.ChatButtonSelector.Name"),
-    hint: t("VAESEN_ADH.Settings.ChatButtonSelector.Hint"),
+    name: L("VAESEN_ADH.Settings.ChatButtonSelector.Name", "Chat selector (Apply Damage)", "Selettore chat (Applica Danno)"),
+    hint: L("VAESEN_ADH.Settings.ChatButtonSelector.Hint", "CSS selector for the chat card container.", "Selettore CSS del contenitore della chat card."),
     scope: "client", config: true, type: String, default: ".message .message-content"
   });
 }
@@ -110,56 +121,43 @@ function labelApply() {
   if (loc && loc !== "VAESEN_ADH.UI.ApplyDamage") return loc;
   return (game.i18n?.lang ?? "en").toLowerCase().startsWith("it") ? "Applica Danno" : "Apply Damage";
 }
-
 function buildApplyButton(msg, mimicBtn) {
-  // Copia le classi del bottone di riferimento se c'è
   const cls = mimicBtn ? mimicBtn.className : "button";
   const $btn = $(`<button type="button" class="${cls} ${MODID}-apply-dmg">${labelApply()}</button>`);
-
-  // CSS: centrato, con margine e font ereditato
   $btn.css({
     display: "block",
-    margin: "0.25rem auto", // centrato orizzontalmente
+    margin: "0.25rem auto",      // centrato
     textAlign: "center",
     font: "inherit"
   });
-
   $btn.on("click", () => openDamageDialog(msg));
   return $btn;
 }
-
 function injectButtonIntoMessage($li, msg) {
   if (!$li?.length) return;
   if ($li.find(`button.${MODID}-apply-dmg`).length) return;
 
-  // Host preferito: card-buttons; fallback: message-content; ultimissimo: il <li> stesso
   let $host = $li.find(".message-content .card-buttons").last();
   if (!$host.length) $host = $li.find(".message-content").last();
   if (!$host.length) $host = $li;
 
-  // Prova a ereditare classi dal primo bottone presente (coerenza grafica)
-  const mimic = $host.find("button").first()[0];
-
+  const mimic = $host.find("button, a.button, a.btn").first()[0];
   const $apply = buildApplyButton(msg, mimic);
   $host.append($apply);
-}
 
-/* — Inserisci SEMPRE all’evento di render/update della singola card — */
+  dbg("inject", { id: msg?.id, host: $host[0]?.className || $host[0]?.nodeName, mimicClass: mimic?.className });
+}
 Hooks.on("renderChatMessage", (msg, html) => {
   try { injectButtonIntoMessage(html, msg); } catch (e) { console.error(`[${MODID}] renderChatMessage`, e); }
 });
-
 Hooks.on("updateChatMessage", (msg) => {
   try {
-    // attende il nuovo DOM dopo il Push
     requestAnimationFrame(() => {
       const $li = ui.chat?.element?.find(`li.chat-message[data-message-id="${msg.id}"]`);
       if ($li?.length) injectButtonIntoMessage($li, msg);
     });
   } catch (e) { console.error(`[${MODID}] updateChatMessage`, e); }
 });
-
-/* — Observer GLOBALE: ogni nuovo/ricostruito messaggio riceve il bottone — */
 let __adhChatLogObserver = null;
 function attachChatLogObserver($log) {
   if (!($log?.length) || __adhChatLogObserver) return;
@@ -177,12 +175,10 @@ function attachChatLogObserver($log) {
   });
   __adhChatLogObserver.observe($log[0], { childList: true, subtree: true });
 }
-
 Hooks.on("renderChatLog", (_app, html) => {
   const $log = html.find("ol#chat-log, .chat-log").first();
   if ($log?.length) {
     attachChatLogObserver($log);
-    // pass iniziale su tutti i messaggi già presenti
     $log.children("li.chat-message").each((_, li) => {
       const $li = $(li);
       const id = $li.attr("data-message-id");
@@ -191,33 +187,33 @@ Hooks.on("renderChatLog", (_app, html) => {
     });
   }
 });
-
 Hooks.on("ready", () => {
-  // alcuni temi hanno già il log pronto prima di renderChatLog
   const $log = ui.chat?.element?.find("ol#chat-log, .chat-log")?.first();
   if ($log?.length) attachChatLogObserver($log);
 });
 
-/* ============ Damage Dialog ============ */
+/* ============ Damage Dialog (HTML string, compat v13) ============ */
 async function openDamageDialog(_chatMessage) {
   const defender = canvas?.tokens?.controlled?.[0]?.actor ?? null;
-  const dlg = document.createElement("form");
-  dlg.innerHTML = `
-    <div class="form-group">
-      <label>${safeLabel("VAESEN_ADH.Dialog.BaseDamage", "Danno Base", "Base Damage")}</label>
-      <input type="number" name="baseDamage" value="1"/>
-    </div>
-    <div class="form-group">
-      <label>${safeLabel("VAESEN_ADH.Dialog.ExtraToDamage", "Successi extra in Danno", "Extra Successes to Damage")}</label>
-      <input type="number" name="extraToDamage" value="0"/>
-    </div>
-    <div class="form-group">
-      <label><input type="checkbox" name="isMental"/> ${safeLabel("VAESEN_ADH.Dialog.IsMental", "Danno Mentale", "Mental Damage")}</label>
-    </div>`;
+
+  const content = `
+<form>
+  <div class="form-group">
+    <label>${safeLabel("VAESEN_ADH.Dialog.BaseDamage", "Danno Base", "Base Damage")}</label>
+    <input type="number" name="baseDamage" value="1"/>
+  </div>
+  <div class="form-group">
+    <label>${safeLabel("VAESEN_ADH.Dialog.ExtraToDamage", "Successi extra in Danno", "Extra Successes to Damage")}</label>
+    <input type="number" name="extraToDamage" value="0"/>
+  </div>
+  <div class="form-group">
+    <label><input type="checkbox" name="isMental"/> ${safeLabel("VAESEN_ADH.Dialog.IsMental", "Danno Mentale", "Mental Damage")}</label>
+  </div>
+</form>`.trim();
 
   new Dialog({
     title: safeLabel("VAESEN_ADH.Dialog.Title", "Applica Danno (Vaesen)", "Apply Damage (Vaesen)"),
-    content: dlg,
+    content,
     buttons: {
       apply: {
         label: safeLabel("VAESEN_ADH.UI.Apply", "Applica", "Apply"),
@@ -225,8 +221,10 @@ async function openDamageDialog(_chatMessage) {
           const base = Number(dlgHtml.find('input[name="baseDamage"]').val() || 0);
           const extra = Number(dlgHtml.find('input[name="extraToDamage"]').val() || 0);
           const isMental = dlgHtml.find('input[name="isMental"]').is(":checked");
+
           const tokens = canvas?.tokens?.controlled?.length ? canvas.tokens.controlled : (defender ? [defender.token] : []);
           if (!tokens?.length) return uiWarn(safeLabel("VAESEN_ADH.Warn.SelectTarget", "Seleziona almeno un bersaglio.", "Select at least one target."));
+
           for (const tkn of tokens) await applyDamageToActor(tkn.actor, base + extra, { isMental });
           uiInfo(safeLabel("VAESEN_ADH.Info.DamageApplied", "Danno applicato.", "Damage applied."));
         }
@@ -246,7 +244,24 @@ async function applyDamageToActor(actor, amount, { isMental = false } = {}) {
   else return applyDamageToNPC(actor, n, { isMental });
 }
 
-/* ---------- PC: states + broken ---------- */
+/* ---------- PC helpers ---------- */
+// Raccoglie SOLO le box tickabili (che contengono almeno una chiave booleana tra candidateKeys)
+function collectTickableBoxes(states, candidateKeys) {
+  const boxes = [];
+  const pushIfTickable = (node, path) => {
+    if (!node || typeof node !== "object") return;
+    const key = candidateKeys.find(k => typeof node[k] === "boolean");
+    if (key) boxes.push({ path, key, checked: !!node[key] });
+  };
+  if (Array.isArray(states)) {
+    states.forEach((node, i) => pushIfTickable(node, i));
+  } else if (states && typeof states === "object") {
+    Object.keys(states).forEach(k => pushIfTickable(states[k], k));
+  }
+  return boxes;
+}
+
+/* ---------- PC: states + broken (usando collectTickableBoxes) ---------- */
 async function applyDamageToPC(actor, n, { isMental }) {
   const mode = game.settings.get(MODID, "damageMode");
   const preferBool = game.settings.get(MODID, "conditionsPreferBoolean");
@@ -258,39 +273,53 @@ async function applyDamageToPC(actor, n, { isMental }) {
                               : game.settings.get(MODID, "targetPathPhysical");
   const brokenPath = isMental ? game.settings.get(MODID, "brokenPathMental")
                               : game.settings.get(MODID, "brokenPathPhysical");
-  const states = get(actor.toObject(), statesPath);
+  const data = actor.toObject();
+  const states = get(data, statesPath);
 
-  if (states === undefined) return applyDamageToFlags(actor, n, { isMental });
-  if (mode === "numeric" || !preferBool) return applyDamageToFlags(actor, n, { isMental });
+  if (states === undefined || mode === "numeric" || !preferBool) {
+    return applyDamageToFlags(actor, n, { isMental });
+  }
 
-  let left = n, changed = false;
+  const boxes = collectTickableBoxes(states, candidateKeys);
+  if (!boxes.length) {
+    return applyDamageToFlags(actor, n, { isMental });
+  }
+
+  let left = n;
   const next = foundry.utils.duplicate(states);
 
-  if (Array.isArray(next)) {
-    for (const node of next) {
-      if (left <= 0) break;
-      if (node && typeof node === "object") {
-        const k = candidateKeys.find(k => typeof node[k] === "boolean");
-        if (k && !node[k]) { node[k] = true; left--; changed = true; }
-      }
-    }
-  } else if (next && typeof next === "object") {
-    for (const k of Object.keys(next)) {
-      if (left <= 0) break;
-      const node = next[k];
-      const kk = candidateKeys.find(x => node && typeof node[x] === "boolean");
-      if (kk && !node[kk]) { node[kk] = true; left--; changed = true; }
+  for (const b of boxes) {
+    if (left <= 0) break;
+    if (!b.checked) {
+      if (Array.isArray(next)) next[b.path][b.key] = true;
+      else next[b.path][b.key] = true;
+      left--;
     }
   }
 
-  if (changed) {
-    await actor.update({ [statesPath]: next });
-    await maybeSetBroken(actor, statesPath, brokenPath, candidateKeys);
+  await actor.update({ [statesPath]: next });
+
+  // Ricalcola e valuta Broken solo sulle box tickabili
+  const updated = get(actor.toObject(), statesPath);
+  const boxesAfter = collectTickableBoxes(updated, candidateKeys);
+  const total = boxesAfter.length;
+  const marked = boxesAfter.filter(b => b.checked).length;
+
+  if (total > 0 && marked >= total) {
+    await actor.update({ [brokenPath]: true });
+    uiInfo(safeLabel("VAESEN_ADH.Info.Broken", `${actor.name} è Broken.`, `${actor.name} is Broken.`));
   }
-  if (left > 0) uiWarn(safeLabel("VAESEN_ADH.Warn.NoMoreBoxes", `${n-left}/${n} caselle spuntate; non ce ne sono altre.`, `${n-left}/${n} boxes ticked; no more available.`));
+
+  if (left > 0) {
+    uiWarn(safeLabel(
+      "VAESEN_ADH.Warn.NoMoreBoxes",
+      `${n-left}/${n} caselle spuntate; non ce ne sono altre.`,
+      `${n-left}/${n} boxes ticked; no more available.`
+    ));
+  }
 }
 
-/* ---------- NPC / Vaesen: prefer condition Items ---------- */
+/* ---------- NPC / Vaesen ---------- */
 function isVaesenConditionItem(it) {
   try {
     if (typeof it?.type === "string" && it.type.toLowerCase() === "condition") return true;
@@ -303,8 +332,11 @@ function isVaesenConditionItem(it) {
 }
 
 async function applyDamageToNPC(actor, n, { isMental }) {
+  const stopOnExhaust = game.settings.get(MODID, "npcStopWhenNoConditions");
+
   if (game.settings.get(MODID, "npcUseConditionItems")) {
     const activePath = (game.settings.get(MODID, "npcConditionActivePath") || "system.active").trim();
+
     const allCond = actor.items.filter(isVaesenConditionItem);
     const inactive = allCond.filter(it => {
       const docActive = !!get(it, activePath);
@@ -312,18 +344,39 @@ async function applyDamageToNPC(actor, n, { isMental }) {
       return !(docActive || rawActive);
     });
 
-    dbg("Vaesen cond-items", { total: allCond.length, inactive: inactive.map(i => ({ id: i.id, name: i.name })) });
-
     if (inactive.length > 0) {
       const slice = inactive.slice(0, n);
       const updates = slice.map(it => ({ _id: it.id, [activePath]: true }));
       await actor.updateEmbeddedDocuments("Item", updates);
-      uiInfo(safeLabel("VAESEN_ADH.Info.ItemsActivated", `Attivate ${updates.length} condizioni.`, `${updates.length} condition(s) activated.`));
-      const left = n - updates.length;
-      if (left > 0) return applyDamageToNPCNumeric(actor, left, { isMental });
+
+      const activated = updates.length;
+      const left = n - activated;
+
+      if (left > 0) {
+        if (stopOnExhaust) {
+          uiWarn(safeLabel(
+            "VAESEN_ADH.Warn.NoMoreBoxes",
+            `${activated}/${n} condizioni attivate; non ne restano altre.`,
+            `${activated}/${n} conditions activated; no more available.`
+          ));
+          return;
+        }
+        return applyDamageToNPCNumeric(actor, left, { isMental });
+      }
+      return; // tutto il danno assorbito da condizioni
+    }
+
+    if (stopOnExhaust) {
+      uiWarn(safeLabel(
+        "VAESEN_ADH.Warn.NoMoreBoxes",
+        `0/${n} condizioni attivate; non ne restano altre.`,
+        `0/${n} conditions activated; no more available.`
+      ));
       return;
     }
   }
+
+  // fallback numerico
   return applyDamageToNPCNumeric(actor, n, { isMental });
 }
 
@@ -344,29 +397,14 @@ async function applyDamageToNPCNumeric(actor, n, { isMental }) {
   return applyDamageToFlags(actor, n, { isMental });
 }
 
-/* ---------- Broken helper (PC) ---------- */
-async function maybeSetBroken(actor, statesPath, brokenPath, keys) {
-  const st = get(actor.toObject(), statesPath);
-  let total = 0, marked = 0;
-  const isTrue = node => node && typeof node === "object" && keys.some(k => node[k] === true);
-
-  if (Array.isArray(st)) { total = st.length; marked = st.filter(isTrue).length; }
-  else if (st && typeof st === "object") { const vals = Object.values(st); total = vals.length; marked = vals.filter(isTrue).length; }
-
-  if (total > 0 && marked >= total) {
-    await actor.update({ [brokenPath]: true });
-    uiInfo(safeLabel("VAESEN_ADH.Info.Broken", `${actor.name} è Broken.`, `${actor.name} is Broken.`));
-  }
-}
-
 /* ---------- Flags fallback ---------- */
 async function applyDamageToFlags(actor, n, { isMental }) {
   const key = isMental ? "mental" : "physical";
   const path = `flags.${MODID}.${key}.ticks`;
   const cur = Number(get(actor.toObject(), path, 0)) || 0;
   await actor.update({ [path]: cur + n });
-  const kind = isMental ? safeLabel("VAESEN_ADH.Mental", "mentali", "mental") : safeLabel("VAESEN_ADH.Physical", "fisiche", "physical");
-  uiInfo(safeLabel("VAESEN_ADH.Info.FlagsIncreased", `${actor.name}: +${n} ${kind} (flags).`, `${actor.name}: +${n} ${kind} (flags).`));
+  const kind = (isMental ? safeLabel("VAESEN_ADH.Mental", "mentali", "mental") : safeLabel("VAESEN_ADH.Physical", "fisiche", "physical"));
+  uiInfo(`${actor.name}: +${n} ${kind} (flags).`);
 }
 
 /* ============ Init/Ready ============ */
