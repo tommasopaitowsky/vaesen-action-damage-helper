@@ -1,49 +1,65 @@
-# Vaesen – Action & Damage Helper
+#Vaesen – Apply Damage#
 
-Small add‑on module for **Foundry VTT (v13+)** that **tracks Long/Short actions per turn** and adds an **“Apply Damage”** button to chat cards, with a dialog to convert **extra successes** into extra damage. It is **system‑agnostic** for Vaesen because you can **map the target actor fields** (HP or Conditions) via settings—no changes to the Vaesen system needed.
+###🇬🇧 English###
 
-## Features
-- **Per‑turn action tracking:** buttons in the Combat Tracker for **Long** and **Short** actions; reset on turn change.
-- **Damage dialog:** click “Apply Damage” on a chat message to open a dialog; set base damage and number of extra successes to convert; optionally mark as **Mental** damage.
-- **Configurable field mapping:** choose whether damage is **numeric** (e.g., subtract HP) or **conditions** (increment a counter); configure **Physical** and **Mental** paths like `system.hp.value` or `system.conditions.physical`.
-- **Non‑intrusive:** it doesn't modify the Vaesen system—just reads and updates whatever path you configure.
+Small add-on module for Foundry VTT (v13+) that adds an “Apply Damage” button to Vaesen chat cards, with a dialog to apply damage as Physical or Mental.
+It supports both Player Characters (condition boxes + Broken) and NPCs / Vaesen (condition Items or numeric tracks).
+Includes English and Italian localization.
 
-## Installation
-### Manual (local)
-1. Download the ZIP from the Releases page.
-2. Extract into your data folder under `Data/modules/vaesen-action-damage-helper`.
-3. Enable the module in your Vaesen world.
+**Features**
+	•	Player Characters
+	•	Ticks system.condition.physical.states and system.condition.mental.states.
+	•	Automatically sets isBroken when all boxes are filled.
+	•	NPC / Vaesen
+	•	Activates condition Items (system.active), just like manually checking the sheet.
+	•	If no conditions remain, reduces configured numeric fields (e.g. system.health.value).
+	•	Last fallback: stores counters in module flags (non-intrusive).
+	•	Chat integration
+	•	Adds an “Apply Damage” button under the Push button in roll chat cards.
+	•	Dialog lets you set base damage, convert extra successes, and mark as Mental.
 
-### Manifest (GitHub)
-Once you publish the repository:
-- **Manifest URL:** `https://raw.githubusercontent.com/USERNAME/vaesen-action-damage-helper/main/module.json`
-- **Download URL:** `https://github.com/USERNAME/vaesen-action-damage-helper/releases/download/v0.1.0/vaesen-action-damage-helper-0.1.0.zip`
+**Installation**
+	•	Manifest URL:
 
-> Replace `USERNAME` with your GitHub username and tag the release as `v0.1.0`.
+https://raw.githubusercontent.com/tommasopaitowsky/vaesen-action-damage-helper/main/module.json
 
-## Settings
-- **Blocca azioni oltre il consentito** (`blockIllegalActions`) – hard‑block or only warn.
-- **Azioni Brevi per turno** (`shortActionsPerTurn`) – default 1.
-- **Modalità Danno** (`damageMode`) – `numeric` (subtract a value) or `conditions` (increment a counter).
-- **Path attributo FISICO** (`targetPathPhysical`) – e.g. `system.hp.value` or `system.conditions.physical`.
-- **Path attributo MENTALE** (`targetPathMental`) – e.g. `system.hp.value` or `system.conditions.mental`.
-- **Selettore chat** (`chatButtonSelector`) – CSS selector where the button should be injected.
 
-## Usage
-- During combat, the active combatant shows **Segna Lunga** and **Breve x/y** in the tracker.
-- On any roll message, click **Applica Danno** → set **base damage** and **extra successes** → select targets (controlled tokens) → **Applica**.
-- Switch between Physical and Mental damage via the checkbox (uses the configured paths).
+**Usage**
+	1.	Roll an attack or damage in chat.
+	2.	Click Apply Damage (under Push).
+	3.	Enter base damage and extra successes; check Mental if needed.
+	4.	Select target tokens on the canvas.
+	5.	Click Apply → PCs tick boxes, NPCs activate conditions or reduce tracks.
 
-## Roadmap
-- Auto‑parse extra successes from Vaesen roll data (if available in ChatMessage flags).
-- Token HUD buttons for actions.
-- Optional enforcement that disables certain buttons after actions are spent.
+---
 
-## Development
-- Foundry v13+.
-- No external deps. ESModule entry at `scripts/module.js`.
+###🇮🇹 Italiano###
 
-## Credits & License
-Author: **Tommaso Paitowsky** (+ GPT‑5 Thinking)  
-License: **MIT** (see `LICENSE`).  
-Part of the “Moduli per Foundry” project.
+Piccolo modulo aggiuntivo per Foundry VTT (v13+) che aggiunge un pulsante “Applica Danno” alle carte chat di Vaesen, con una finestra di dialogo per applicare danni Fisici o Mentali.
+Supporta sia i Personaggi Giocanti (caselle di condizione + Broken) sia i Vaesen/NPC (Condizioni come Item o tracciati numerici).
+Include la localizzazione in inglese e italiano.
+
+**Funzionalità**
+	•	Personaggi Giocanti
+	•	Spunta system.condition.physical.states e system.condition.mental.states.
+	•	Imposta automaticamente isBroken quando tutte le caselle sono piene.
+	•	NPC / Vaesen
+	•	Attiva le condizioni come Item (system.active), esattamente come spuntarle nella scheda.
+	•	Se non restano condizioni inattive, riduce i campi numerici configurati (es. system.health.value).
+	•	Ultimo fallback: registra i conteggi nei flags del modulo (non invasivo).
+	•	Integrazione con la chat
+	•	Aggiunge il pulsante “Applica Danno” sotto al pulsante Push nelle carte chat.
+	•	La finestra di dialogo permette di impostare danno base, successi extra e di segnarlo come Mentale.
+
+**Installazione**
+	•	Manifest URL:
+
+https://raw.githubusercontent.com/tommasopaitowsky/vaesen-action-damage-helper/main/module.json
+
+
+**Utilizzo**
+	1.	Effettua un tiro di attacco o danno in chat.
+	2.	Clicca Applica Danno (sotto Push).
+	3.	Inserisci danno base e successi extra; spunta Mentale se necessario.
+	4.	Seleziona i token bersaglio sulla mappa.
+	5.	Premi Applica → i PG spuntano caselle, i Vaesen attivano condizioni o riducono i tracciati.
