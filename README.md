@@ -1,6 +1,6 @@
-#Vaesen – Apply Damage#
+# Vaesen – Apply Damage #
 
-###🇬🇧 English###
+### 🇬🇧 English ###
 
 Small add-on module for Foundry VTT (v13+) that adds an “Apply Damage” button to Vaesen chat cards, with a dialog to apply damage as Physical or Mental.
 It supports both Player Characters (condition boxes + Broken) and NPCs / Vaesen (condition Items or numeric tracks).
@@ -33,7 +33,7 @@ https://raw.githubusercontent.com/tommasopaitowsky/vaesen-action-damage-helper/m
 
 ---
 
-###🇮🇹 Italiano###
+### 🇮🇹 Italiano ###
 
 Piccolo modulo aggiuntivo per Foundry VTT (v13+) che aggiunge un pulsante “Applica Danno” alle carte chat di Vaesen, con una finestra di dialogo per applicare danni Fisici o Mentali.
 Supporta sia i Personaggi Giocanti (caselle di condizione + Broken) sia i Vaesen/NPC (Condizioni come Item o tracciati numerici).
