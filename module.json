@@ -1,10 +1,10 @@
 {
   "id": "vaesen-action-damage-helper",
-  "title": "Vaesen \u2013 Apply Damage",
+  "title": "Vaesen \u2013 Action & Damage Helper",
   "description": "Tracks PC conditions and applies damage to Vaesen/NPCs via Items or numeric tracks. Adds an Apply Damage button under Push in chat cards.",
   "version": "0.2.3",
   "compatibility": {
-    "minimum": "11",
+    "minimum": "13",
     "verified": "13"
   },
   "authors": [

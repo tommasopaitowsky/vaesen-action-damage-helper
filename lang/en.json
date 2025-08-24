@@ -1,0 +1,82 @@
+{
+  "VAESEN_ADH": {
+    "UI": {
+      "ApplyDamage": "Apply Damage",
+      "Apply": "Apply",
+      "Cancel": "Cancel"
+    },
+    "Dialog": {
+      "Title": "Apply Damage (Vaesen)",
+      "BaseDamage": "Base Damage",
+      "ExtraToDamage": "Extra Successes to Damage",
+      "IsMental": "Mental Damage"
+    },
+    "Warn": {
+      "SelectTarget": "Select at least one target.",
+      "NoMoreBoxes": "{marked}/{total} boxes ticked; no more available."
+    },
+    "Info": {
+      "DamageApplied": "Damage applied.",
+      "ItemsActivated": "{count} condition(s) activated.",
+      "NumericReduced": "{name}: {from} \u2192 {to} ({path})",
+      "Broken": "{name} is Broken.",
+      "FlagsIncreased": "{name}: +{amount} {kind} (flags)."
+    },
+    "Physical": "physical",
+    "Mental": "mental",
+    "Settings": {
+      "DamageMode": {
+        "Name": "Damage Mode (PC)",
+        "Hint": "For PCs: 'conditions' ticks boxes; 'numeric' uses flags as a counter.",
+        "Choices": {
+          "Conditions": "Conditions (states + broken)",
+          "Numeric": "Numeric (flags)"
+        }
+      },
+      "TargetPathPhysical": {
+        "Name": "PC \u2013 Physical conditions path (states)",
+        "Hint": "e.g., system.condition.physical.states"
+      },
+      "TargetPathMental": {
+        "Name": "PC \u2013 Mental conditions path (states)",
+        "Hint": "e.g., system.condition.mental.states"
+      },
+      "BrokenPathPhysical": {
+        "Name": "PC \u2013 Physical isBroken path",
+        "Hint": "e.g., system.condition.physical.isBroken"
+      },
+      "BrokenPathMental": {
+        "Name": "PC \u2013 Mental isBroken path",
+        "Hint": "e.g., system.condition.mental.isBroken"
+      },
+      "ConditionsPreferBoolean": {
+        "Name": "PC \u2013 Tick boolean boxes (states)",
+        "Hint": "If enabled, PCs use boolean condition boxes."
+      },
+      "ConditionObjectBoolKey": {
+        "Name": "PC \u2013 Boolean key inside states",
+        "Hint": "Primary key for object states (default: isChecked)."
+      },
+      "NpcUseConditionItems": {
+        "Name": "NPC/Vaesen \u2013 Use condition Items",
+        "Hint": "Before numeric tracks, activate condition Items (system.active)."
+      },
+      "NpcConditionActivePath": {
+        "Name": "NPC \u2013 Item active path",
+        "Hint": "Boolean path on Item for activation (default: system.active)."
+      },
+      "NpcNumericPhysicalCandidates": {
+        "Name": "NPC/Vaesen \u2013 Physical numeric candidates (CSV)",
+        "Hint": "Examples: system.health.value, system.toughness.value"
+      },
+      "NpcNumericMentalCandidates": {
+        "Name": "NPC/Vaesen \u2013 Mental numeric candidates (CSV)",
+        "Hint": "Add a path if your sheet has a mental track."
+      },
+      "ChatButtonSelector": {
+        "Name": "Chat selector (Apply Damage)",
+        "Hint": "CSS selector for the chat card container."
+      }
+    }
+  }
+}
