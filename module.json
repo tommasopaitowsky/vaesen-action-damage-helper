@@ -4,7 +4,7 @@
   "description": "Tracks PC conditions and applies damage to Vaesen/NPCs via Items or numeric tracks. Adds an Apply Damage button under Push in chat cards.",
   "version": "0.2.3",
   "compatibility": {
-    "minimum": "13",
+    "minimum": "11",
     "verified": "13"
   },
   "authors": [
