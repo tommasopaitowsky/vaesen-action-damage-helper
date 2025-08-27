@@ -121,16 +121,42 @@ function labelApply() {
   if (loc && loc !== "VAESEN_ADH.UI.ApplyDamage") return loc;
   return (game.i18n?.lang ?? "en").toLowerCase().startsWith("it") ? "Applica Danno" : "Apply Damage";
 }
-function buildApplyButton(msg, mimicBtn) {
-  const cls = mimicBtn ? mimicBtn.className : "button";
-  const $btn = $(`<button type="button" class="${cls} ${MODID}-apply-dmg">${labelApply()}</button>`);
+function buildApplyButton(msg /*, mimicBtn*/) {
+  // Bottone "neutro": nessuna classe di sistema per evitare hook delegati
+  const $btn = $(
+    `<button type="button" 
+              class="${MODID}-apply-dmg adh-btn"
+              data-adh="apply-damage"
+              role="button"
+              aria-label="${labelApply()}">${labelApply()}</button>`
+  );
+
+  // Stile: centrato, usa il font del tema; niente classi esterne
   $btn.css({
     display: "block",
-    margin: "0.25rem auto",      // centrato
+    margin: "0.25rem auto",
     textAlign: "center",
-    font: "inherit"
+    font: "inherit",
+    padding: "0.25rem 0.5rem",
+    cursor: "pointer"
   });
-  $btn.on("click", () => openDamageDialog(msg));
+
+  // Handler in CAPTURE + bubble con blocco totale della propagazione
+  const handler = (ev) => {
+    try {
+      ev.preventDefault();
+      ev.stopPropagation();
+      if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
+    } catch (_) {}
+    openDamageDialog(msg);
+    return false;
+  };
+
+  // nativo in capture (prima dei listener delegati del sistema)
+  $btn[0].addEventListener("click", handler, { capture: true });
+  // anche jQuery in bubble per ridondanza
+  $btn.on("click", handler);
+
   return $btn;
 }
 function injectButtonIntoMessage($li, msg) {
